@@ -19,7 +19,7 @@
     }
   </script>
 
-  <!-- Leaflet CSS & JS -->
+  <!-- Leaflet CSS & JS CDN -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -31,7 +31,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    #map { height: 420px; width: 100%; z-index: 10; border-radius: 0.75rem; }
+    #map { height: 440px; width: 100%; z-index: 10; border-radius: 0.75rem; }
     .custom-scroll::-webkit-scrollbar { width: 6px; }
     .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -40,7 +40,7 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased custom-scroll">
 
   <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3.5">
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3.5">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/20 text-white">
@@ -50,7 +50,7 @@
           <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
             VOYAGECRAFT <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-950 border border-blue-800 text-blue-400 px-2 py-0.5 rounded-full">Chennai Hub</span>
           </h1>
-          <p class="text-xs text-slate-400">Autonomous Itinerary & Multi-Modal Travel Engine</p>
+          <p class="text-xs text-slate-400">Autonomous Vacation & Road Trip Engineer • 100% Free OpenStack</p>
         </div>
       </div>
 
@@ -67,7 +67,7 @@
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- Main Grid -->
   <main class="max-w-7xl mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
     <!-- LEFT COLUMN: Trip Planner & Vehicle Configuration (4 cols) -->
@@ -77,7 +77,7 @@
           <h2 class="text-base font-bold text-white flex items-center gap-2">
             <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Route & Vehicle Dynamics
           </h2>
-          <span class="text-[11px] text-emerald-400 font-mono font-medium">Zero-Cost APIs</span>
+          <span class="text-[11px] text-emerald-400 font-mono font-medium">Free OSM Engine</span>
         </div>
 
         <!-- Form Elements -->
@@ -111,7 +111,7 @@
             </div>
           </div>
 
-          <!-- Travel Profile & Passenger Count -->
+          <!-- Persona & Travelers -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="font-semibold text-slate-400 block mb-1">Traveler Profile</label>
@@ -134,7 +134,7 @@
             </div>
           </div>
 
-          <!-- VEHICLE SELECTOR & LIVE FUEL CONFIGURATION -->
+          <!-- Vehicle Selector & Live Chennai Rates -->
           <div class="pt-3 border-t border-slate-800 space-y-3">
             <div>
               <div class="flex items-center justify-between mb-1">
@@ -153,7 +153,7 @@
               </select>
             </div>
 
-            <!-- Pump Rate with Verified Chennai Prices -->
+            <!-- Chennai Live Fuel Rates Input -->
             <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-semibold text-slate-300" id="fuelRateLabel">Current Pump Rate (₹/L):</span>
@@ -176,14 +176,14 @@
             </div>
           </div>
 
-          <!-- Generate Button -->
+          <!-- Compute Button -->
           <button id="btnGenerate" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-sm">
             <i data-lucide="zap" class="w-4 h-4"></i> Compute Route & Build Blueprint
           </button>
         </div>
       </div>
 
-      <!-- Pre-Trip Vehicle Checklist -->
+      <!-- Pre-Trip Inspection Checklist -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3 text-xs">
         <h3 class="font-bold text-white flex items-center gap-2">
           <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i> Pre-Trip Vehicle Checklist
@@ -191,7 +191,7 @@
         <ul class="space-y-2 text-slate-300">
           <li class="flex items-start gap-2">
             <input type="checkbox" class="mt-0.5 rounded text-blue-600 bg-slate-800 border-slate-700" />
-            <span>Tire Pressure: 33 PSI Front / 35 PSI Rear (Check spare tire)</span>
+            <span>Tire Pressure: 33 PSI Front / 35 PSI Rear (Check spare wheel)</span>
           </li>
           <li class="flex items-start gap-2">
             <input type="checkbox" class="mt-0.5 rounded text-blue-600 bg-slate-800 border-slate-700" />
@@ -215,7 +215,10 @@
       <!-- Map Display Container -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
         <div class="flex items-center justify-between pb-3 text-xs font-semibold text-slate-400">
-          <span class="flex items-center gap-1.5"><i data-lucide="map" class="w-4 h-4 text-blue-400"></i> GIS Spatial Corridor (OSRM Driving Geometry)</span>
+          <span class="flex items-center gap-1.5">
+            <i data-lucide="map" class="w-4 h-4 text-blue-400"></i> 
+            OpenStreetMap GIS Spatial Corridor (OSRM Routing)
+          </span>
           <span id="routeDistanceBadge" class="bg-slate-800 text-blue-400 px-2.5 py-0.5 rounded-full font-mono">Distance: Ready</span>
         </div>
         <div id="map"></div>
@@ -316,10 +319,18 @@
     </div>
   </div>
 
-  <!-- APPLICATION LOGIC SCRIPT (ESM / Zero-Node) -->
+  <!-- APPLICATION LOGIC (Zero Node.js / Browser ESM) -->
   <script type="module">
     // Lucide Icons initialization
     lucide.createIcons();
+
+    // Fix for Leaflet default icon paths on static CDN
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    });
 
     // 1. VEHICLE SPECS & LIVE FUEL CONSTANTS
     const VEHICLE_CATALOG = {
@@ -341,11 +352,12 @@
     document.getElementById('inputStartDate').value = nextFri.toISOString().split('T')[0];
     document.getElementById('inputEndDate').value = nextMon.toISOString().split('T')[0];
 
-    // 2. Leaflet Map Setup
+    // 2. Leaflet Map Setup with 100% FREE OpenStreetMap (Zero Watermark / No API Key)
     let map = L.map('map').setView([13.0827, 80.2707], 7);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      maxZoom: 18
+    
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
     }).addTo(map);
 
     let routeLayer = null;
@@ -402,7 +414,7 @@
           };
         }
       } catch (e) {}
-      // Fallback direct distance calculation
+      // Fallback calculation
       const dLat = (end[0] - start[0]) * 111;
       const dLng = (end[1] - start[1]) * 105;
       const roadDist = Math.round(Math.sqrt(dLat*dLat + dLng*dLng) * 1.35);
@@ -443,7 +455,7 @@
     function buildMultiModalOptions(distanceKm, drivingHours, drivingCost, passengers) {
       const trainHours = Number((distanceKm / 72).toFixed(1));
       const busHours = Number((distanceKm / 46).toFixed(1));
-      const trainCostPerPax = distanceKm < 450 ? 980 : 1650; // Vande Bharat / 3A benchmark
+      const trainCostPerPax = distanceKm < 450 ? 980 : 1650;
       const busCostPerPax = Math.round(distanceKm * 2.3);
 
       const options = [
@@ -494,7 +506,7 @@
           title: 'Domestic Direct / 1-Stop Flight',
           sub: 'IndiGo / Air India / Akasa',
           hub: 'Chennai Int Airport (MAA - T1) → Regional Hub',
-          totalTime: 4.2, // 1.2h flight + 3h terminal buffers
+          totalTime: 4.2,
           co2: Math.round(distanceKm * 0.24),
           totalCost: (distanceKm < 550 ? 4200 : 5800) * passengers,
           bookingUrl: 'https://www.goindigo.in/',
@@ -539,8 +551,8 @@
         const effectiveEfficiency = useAC ? (vehicle.efficiency / vehicle.acPenalty) : vehicle.efficiency;
         const totalRoundTripKm = route.distKm * 2;
         const fuelCost = Math.round((totalRoundTripKm / effectiveEfficiency) * pumpRate);
-        const tollCost = Math.round(route.distKm * 1.95 * 2); // NHAI average round trip
-        const stayCost = 3800 * 3; // 3 nights estimate
+        const tollCost = Math.round(route.distKm * 1.95 * 2);
+        const stayCost = 3800 * 3;
         const foodCost = 1400 * 4 * passengers;
         const activitiesCost = 1800 * passengers;
         const bufferCost = Math.round((fuelCost + tollCost + stayCost + foodCost) * 0.12);
@@ -548,7 +560,7 @@
         // 5. Multi-modal calculation
         const transitOptions = buildMultiModalOptions(route.distKm, route.hours, fuelCost + tollCost, passengers);
 
-        // 6. Construct Trip Plan
+        // 6. Trip Plan Structure
         currentTripPlan = {
           origin,
           destination: dest,
@@ -599,7 +611,7 @@
         document.getElementById('itineraryContainer').classList.remove('hidden');
         document.getElementById('btnExportPDF').disabled = false;
 
-        // Save to LocalStorage / Firebase
+        // Save
         saveTripToStorage(currentTripPlan);
 
       } catch (err) {
@@ -779,7 +791,7 @@
       lucide.createIcons();
     }
 
-    // 12. CLIENT-SIDE PDF GENERATOR (jsPDF + autoTable)
+    // 12. CLIENT-SIDE PDF GENERATOR
     document.getElementById('btnExportPDF').addEventListener('click', () => {
       if (!currentTripPlan) return;
       const { jsPDF } = window.jspdf;
@@ -787,7 +799,7 @@
       const trip = currentTripPlan;
 
       // Header Banner
-      doc.setFillColor(15, 23, 42); // slate-900
+      doc.setFillColor(15, 23, 42);
       doc.rect(0, 0, 210, 42, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
@@ -813,7 +825,7 @@
       doc.text(`• One-Way Distance: ${trip.route.distKm} km (~${trip.route.hours} driving hrs)`, 110, 62);
       doc.text(`• Selected Transit Mode: ${selectedTransitMode.toUpperCase()}`, 110, 68);
 
-      // Itinerary Schedule Table
+      // Schedule Table
       const scheduleRows = [];
       trip.itinerary.forEach(d => {
         d.events.forEach(e => {
@@ -883,13 +895,12 @@
       doc.save(`voyagecraft_${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '_')}_blueprint.pdf`);
     });
 
-    // 13. STORAGE & OPTIONAL FIREBASE INTEGRATION
+    // 13. LOCAL STORAGE & OPTIONAL FIREBASE
     function saveTripToStorage(trip) {
       localStorage.setItem('voyagecraft_latest_trip', JSON.stringify(trip));
       const firebaseConfigStr = localStorage.getItem('voyagecraft_firebase_config');
       if (firebaseConfigStr) {
         try {
-          // Dynamic Firebase ESM import
           import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js').then(({ initializeApp, getApps }) => {
             import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({ getFirestore, collection, addDoc }) => {
               const config = JSON.parse(firebaseConfigStr);
