@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoyageCraft | Intelligent Vacation & Road Trip Engineer</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eff6ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- jsPDF & AutoTable CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    #map { height: 420px; width: 100%; z-index: 10; border-radius: 0.75rem; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased custom-scroll">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-4 lg:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-500/20 text-white">
+          <i data-lucide="compass" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+            VOYAGECRAFT <span class="text-[10px] font-bold uppercase tracking-wider bg-blue-950 border border-blue-800 text-blue-400 px-2 py-0.5 rounded-full">Chennai Hub</span>
+          </h1>
+          <p class="text-xs text-slate-400">Autonomous Itinerary & Multi-Modal Travel Engine</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <button id="btnOpenFirebaseModal" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-2 rounded-lg font-medium flex items-center gap-1.5 transition">
+          <i data-lucide="database" class="w-4 h-4 text-amber-400"></i>
+          <span id="firebaseStatusText">Firebase: Local</span>
+        </button>
+
+        <button id="btnExportPDF" disabled class="text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white px-3.5 py-2 rounded-lg font-bold flex items-center gap-1.5 shadow-md transition">
+          <i data-lucide="file-down" class="w-4 h-4"></i> Download Blueprint PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+    <!-- LEFT COLUMN: Trip Planner & Vehicle Configuration (4 cols) -->
+    <aside class="lg:col-span-4 space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4 text-blue-400"></i> Route & Vehicle Dynamics
+          </h2>
+          <span class="text-[11px] text-emerald-400 font-mono font-medium">Zero-Cost APIs</span>
+        </div>
+
+        <!-- Form Elements -->
+        <div class="space-y-4 text-xs">
+          <div>
+            <label class="font-semibold text-slate-400 flex items-center gap-1 mb-1">
+              <i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-400"></i> Origin Hub
+            </label>
+            <input id="inputOrigin" type="text" value="Chennai, Tamil Nadu" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label class="font-semibold text-slate-400 flex items-center gap-1 mb-1">
+              <i data-lucide="navigation" class="w-3.5 h-3.5 text-emerald-400"></i> Destination
+            </label>
+            <input id="inputDestination" type="text" value="Ooty, Tamil Nadu" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-400 flex items-center gap-1 mb-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Start Date
+              </label>
+              <input id="inputStartDate" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white" />
+            </div>
+            <div>
+              <label class="font-semibold text-slate-400 flex items-center gap-1 mb-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> End Date
+              </label>
+              <input id="inputEndDate" type="date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white" />
+            </div>
+          </div>
+
+          <!-- Travel Profile & Passenger Count -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-400 block mb-1">Traveler Profile</label>
+              <select id="selectProfile" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none">
+                <option value="couple">Couple / Scenic</option>
+                <option value="family">Family (Leisure)</option>
+                <option value="solo">Solo Explorer</option>
+                <option value="adventure">Adventure & Offbeat</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-semibold text-slate-400 block mb-1">Total Travelers</label>
+              <select id="selectPassengers" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none font-bold text-blue-400">
+                <option value="1">1 Person</option>
+                <option value="2" selected>2 People</option>
+                <option value="3">3 People</option>
+                <option value="4">4 People</option>
+                <option value="5">5 People</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- VEHICLE SELECTOR & LIVE FUEL CONFIGURATION -->
+          <div class="pt-3 border-t border-slate-800 space-y-3">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="font-semibold text-slate-300 flex items-center gap-1">
+                  <i data-lucide="car" class="w-3.5 h-3.5 text-blue-400"></i> Road Trip Vehicle
+                </label>
+                <span class="text-[10px] text-blue-400 bg-blue-950 px-1.5 py-0.5 rounded border border-blue-900 font-mono">Default: Nexon</span>
+              </div>
+              <select id="selectVehicle" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-blue-300 font-semibold outline-none">
+                <option value="tata-nexon-petrol" selected>Tata Nexon (Sub-4m SUV - Petrol AMT)</option>
+                <option value="tata-nexon-diesel">Tata Nexon (Sub-4m SUV - Diesel)</option>
+                <option value="tata-nexon-ev">Tata Nexon EV Long Range (EV)</option>
+                <option value="hyundai-creta-petrol">Hyundai Creta 1.5 IVT (Petrol)</option>
+                <option value="mahindra-xuv700-diesel">Mahindra XUV700 AX7 (Diesel)</option>
+                <option value="toyota-innova-diesel">Toyota Innova Crysta (Diesel)</option>
+              </select>
+            </div>
+
+            <!-- Pump Rate with Verified Chennai Prices -->
+            <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-semibold text-slate-300" id="fuelRateLabel">Current Pump Rate (₹/L):</span>
+                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                  Chennai Verified
+                </span>
+              </div>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-sm text-slate-400 font-bold font-mono">₹</span>
+                <input id="inputFuelRate" type="number" step="0.01" value="107.76" class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-7 pr-3 py-1.5 text-sm font-mono font-bold text-emerald-400 focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <p class="text-[10px] text-slate-400">
+                Live Chennai baseline: <strong class="text-white">Petrol ₹107.76</strong> | <strong class="text-white">Diesel ₹99.55</strong> | <strong class="text-white">EV ₹22.00/unit</strong>
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-800/60 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-300 font-medium">Continuous AC Impact (+12% fuel):</span>
+              <input id="checkAC" type="checkbox" checked class="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700 focus:ring-0 cursor-pointer" />
+            </div>
+          </div>
+
+          <!-- Generate Button -->
+          <button id="btnGenerate" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-sm">
+            <i data-lucide="zap" class="w-4 h-4"></i> Compute Route & Build Blueprint
+          </button>
+        </div>
+      </div>
+
+      <!-- Pre-Trip Vehicle Checklist -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3 text-xs">
+        <h3 class="font-bold text-white flex items-center gap-2">
+          <i data-lucide="check-square" class="w-4 h-4 text-emerald-400"></i> Pre-Trip Vehicle Checklist
+        </h3>
+        <ul class="space-y-2 text-slate-300">
+          <li class="flex items-start gap-2">
+            <input type="checkbox" class="mt-0.5 rounded text-blue-600 bg-slate-800 border-slate-700" />
+            <span>Tire Pressure: 33 PSI Front / 35 PSI Rear (Check spare tire)</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <input type="checkbox" class="mt-0.5 rounded text-blue-600 bg-slate-800 border-slate-700" />
+            <span>Engine Coolant & Brake Fluid topped up for Ghat climbs</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <input type="checkbox" checked class="mt-0.5 rounded text-blue-600 bg-slate-800 border-slate-700" />
+            <span>FASTag Minimum Balance: Maintain ₹1,000+</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <input type="checkbox" class="mt-0.5 rounded text-blue-600 bg-slate-800 border-slate-700" />
+            <span>Check e-Pass requirements for Nilgiris / Kodaikanal</span>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- RIGHT COLUMN: Map, Advisory, Multi-Modal Transit, Schedule (8 cols) -->
+    <section class="lg:col-span-8 space-y-6">
+
+      <!-- Map Display Container -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <div class="flex items-center justify-between pb-3 text-xs font-semibold text-slate-400">
+          <span class="flex items-center gap-1.5"><i data-lucide="map" class="w-4 h-4 text-blue-400"></i> GIS Spatial Corridor (OSRM Driving Geometry)</span>
+          <span id="routeDistanceBadge" class="bg-slate-800 text-blue-400 px-2.5 py-0.5 rounded-full font-mono">Distance: Ready</span>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- Live Environmental Advisory Banner -->
+      <div id="advisoryBanner" class="hidden rounded-2xl border p-4 text-xs transition">
+        <div class="flex items-start gap-3">
+          <div id="advisoryIconContainer" class="p-2 rounded-xl"></div>
+          <div class="space-y-1 flex-1">
+            <div class="flex items-center justify-between">
+              <span id="advisoryStatusTitle" class="font-bold text-sm"></span>
+              <div class="flex items-center gap-2 font-mono text-[11px]" id="advisoryMetrics"></div>
+            </div>
+            <p id="advisoryMessage" class="text-slate-300"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Modal Transit Comparison Matrix -->
+      <div id="transitMatrixContainer" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="gauge" class="w-4 h-4 text-blue-500"></i> Multi-Modal Transit Comparison Matrix
+            </h3>
+            <p class="text-xs text-slate-400">Compare door-to-door time, CO2, and total cost departing from Chennai</p>
+          </div>
+          <span class="text-xs font-mono text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-800">
+            Click card to switch mode
+          </span>
+        </div>
+
+        <div id="transitCardsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Budget Allocation Overview Cards -->
+      <div id="budgetGrid" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-[11px] text-slate-400 font-medium">Selected Transit / Fuel</p>
+          <p id="cardTransitCost" class="text-base font-extrabold text-white mt-1">₹0</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-[11px] text-slate-400 font-medium">FASTag Highway Tolls</p>
+          <p id="cardTollCost" class="text-base font-extrabold text-white mt-1">₹0</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-[11px] text-slate-400 font-medium">Stays & Dining</p>
+          <p id="cardStayFoodCost" class="text-base font-extrabold text-white mt-1">₹0</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+          <p class="text-[11px] text-slate-400 font-medium">Total Projected Outlay</p>
+          <p id="cardTotalCost" class="text-base font-extrabold text-emerald-400 mt-1">₹0</p>
+        </div>
+      </div>
+
+      <!-- Day-by-Day Detailed Schedule -->
+      <div id="itineraryContainer" class="hidden space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="calendar-check" class="w-4 h-4 text-blue-400"></i> Day-Wise Execution Schedule & Food Stops
+        </h3>
+        <div id="daysList" class="space-y-4">
+          <!-- Dynamically rendered -->
+        </div>
+      </div>
+
+      <!-- Empty State Placeholder -->
+      <div id="emptyState" class="h-80 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center p-8 text-center text-slate-500">
+        <i data-lucide="compass" class="w-12 h-12 stroke-1 text-slate-600 mb-3"></i>
+        <p class="text-sm font-semibold text-slate-400">Awaiting Route Initialization</p>
+        <p class="text-xs text-slate-600 mt-1 max-w-sm">
+          Select your destination and vehicle on the left, then click "Compute Route & Build Blueprint" to calculate real-world dynamics.
+        </p>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Firebase Configuration Modal -->
+  <div id="firebaseModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="cloud" class="w-4 h-4 text-amber-400"></i> Firebase Firestore Cloud Sync
+        </h3>
+        <button id="btnCloseFirebaseModal" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        By default, trips are stored in your browser's local storage. To sync plans to Google Cloud Firestore, paste your Firebase config credentials below.
+      </p>
+      <textarea id="firebaseConfigInput" rows="6" placeholder='{"apiKey": "AIzaSy...", "authDomain": "...", "projectId": "..."}' class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-emerald-400 outline-none focus:ring-1 focus:ring-blue-500"></textarea>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="btnClearFirebase" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">Clear</button>
+        <button id="btnSaveFirebase" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC SCRIPT (ESM / Zero-Node) -->
+  <script type="module">
+    // Lucide Icons initialization
+    lucide.createIcons();
+
+    // 1. VEHICLE SPECS & LIVE FUEL CONSTANTS
+    const VEHICLE_CATALOG = {
+      'tata-nexon-petrol': { name: 'Tata Nexon Petrol AMT', type: 'Petrol', efficiency: 14.2, defaultRate: 107.76, acPenalty: 1.12 },
+      'tata-nexon-diesel': { name: 'Tata Nexon Diesel', type: 'Diesel', efficiency: 17.5, defaultRate: 99.55, acPenalty: 1.10 },
+      'tata-nexon-ev': { name: 'Tata Nexon EV Long Range', type: 'EV', efficiency: 7.2, defaultRate: 22.00, acPenalty: 1.15 },
+      'hyundai-creta-petrol': { name: 'Hyundai Creta 1.5 IVT', type: 'Petrol', efficiency: 13.8, defaultRate: 107.76, acPenalty: 1.12 },
+      'mahindra-xuv700-diesel': { name: 'Mahindra XUV700 AX7', type: 'Diesel', efficiency: 12.5, defaultRate: 99.55, acPenalty: 1.10 },
+      'toyota-innova-diesel': { name: 'Toyota Innova Crysta', type: 'Diesel', efficiency: 11.2, defaultRate: 99.55, acPenalty: 1.10 }
+    };
+
+    // Set Default Dates: Next Weekend
+    const today = new Date();
+    const nextFri = new Date(today);
+    nextFri.setDate(today.getDate() + ((5 - today.getDay() + 7) % 7 || 7));
+    const nextMon = new Date(nextFri);
+    nextMon.setDate(nextFri.getDate() + 3);
+
+    document.getElementById('inputStartDate').value = nextFri.toISOString().split('T')[0];
+    document.getElementById('inputEndDate').value = nextMon.toISOString().split('T')[0];
+
+    // 2. Leaflet Map Setup
+    let map = L.map('map').setView([13.0827, 80.2707], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      maxZoom: 18
+    }).addTo(map);
+
+    let routeLayer = null;
+    let markersLayer = L.layerGroup().addTo(map);
+
+    // 3. State Management
+    let currentTripPlan = null;
+    let selectedTransitMode = 'self_drive';
+
+    // Handle Vehicle Dropdown Change & Update Live Fuel Rate Input
+    document.getElementById('selectVehicle').addEventListener('change', (e) => {
+      const v = VEHICLE_CATALOG[e.target.value];
+      if (v) {
+        document.getElementById('inputFuelRate').value = v.defaultRate.toFixed(2);
+        document.getElementById('fuelRateLabel').innerText = v.type === 'EV' ? 'Current Unit Rate (₹/kWh):' : 'Current Pump Rate (₹/L):';
+      }
+    });
+
+    // 4. FREE API WRAPPERS (Nominatim, OSRM, Open-Meteo)
+    async function geocode(query) {
+      const fallback = {
+        'chennai': [13.0827, 80.2707],
+        'ooty': [11.4102, 76.6950],
+        'kodaikanal': [10.2381, 77.4892],
+        'munnar': [10.0889, 77.0595],
+        'pondicherry': [11.9416, 79.8083],
+        'bangalore': [12.9716, 77.5946]
+      };
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`, {
+          headers: { 'User-Agent': 'VoyageCraftPlanner/1.0' }
+        });
+        const data = await res.json();
+        if (data && data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      } catch (err) {}
+      
+      const norm = query.toLowerCase();
+      for (const [k, coords] of Object.entries(fallback)) {
+        if (norm.includes(k)) return coords;
+      }
+      return [11.4102, 76.6950]; // default Ooty
+    }
+
+    async function fetchDrivingRoute(start, end) {
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`);
+        const json = await res.json();
+        if (json.routes && json.routes.length > 0) {
+          const r = json.routes[0];
+          return {
+            distKm: Math.round(r.distance / 1000),
+            hours: Number((r.duration / 3600).toFixed(1)),
+            coords: r.geometry.coordinates.map(c => [c[1], c[0]])
+          };
+        }
+      } catch (e) {}
+      // Fallback direct distance calculation
+      const dLat = (end[0] - start[0]) * 111;
+      const dLng = (end[1] - start[1]) * 105;
+      const roadDist = Math.round(Math.sqrt(dLat*dLat + dLng*dLng) * 1.35);
+      return { distKm: roadDist, hours: Number((roadDist / 58).toFixed(1)), coords: [start, end] };
+    }
+
+    async function fetchWeatherAndAQI(lat, lng) {
+      let temp = 22, rain = 15, aqi = 42;
+      try {
+        const [wRes, aRes] = await Promise.all([
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,precipitation_probability,weather_code&timezone=auto`),
+          fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&current=us_aqi&timezone=auto`)
+        ]);
+        if (wRes.ok) {
+          const wJson = await wRes.json();
+          temp = Math.round(wJson.current.temperature_2m);
+          rain = wJson.current.precipitation_probability || 0;
+        }
+        if (aRes.ok) {
+          const aJson = await aRes.json();
+          aqi = aJson.current.us_aqi || 40;
+        }
+      } catch (e) {}
+
+      let status = 'Green';
+      let msg = 'Clear mountain skies with smooth driving visibility across highway and ghat stretches.';
+      if (rain > 50) {
+        status = 'Amber';
+        msg = 'High rain alert: Watch for slick hairpin bends, slow down near ghat waterfalls, and check wiper blades.';
+      } else if (aqi > 120) {
+        status = 'Amber';
+        msg = 'Moderate AQI levels: Sensitive travelers or elders should carry masks during town traffic.';
+      }
+      return { temp, rain, aqi, status, msg };
+    }
+
+    // 5. COMPUTE MULTI-MODAL COMPARISON
+    function buildMultiModalOptions(distanceKm, drivingHours, drivingCost, passengers) {
+      const trainHours = Number((distanceKm / 72).toFixed(1));
+      const busHours = Number((distanceKm / 46).toFixed(1));
+      const trainCostPerPax = distanceKm < 450 ? 980 : 1650; // Vande Bharat / 3A benchmark
+      const busCostPerPax = Math.round(distanceKm * 2.3);
+
+      const options = [
+        {
+          mode: 'self_drive',
+          title: 'Self-Drive (Nexon / Personal Car)',
+          sub: 'Private convenience & door-to-door flexibility',
+          hub: 'Home Doorstep → Resort/Hotel',
+          totalTime: drivingHours,
+          co2: Math.round(distanceKm * 0.14),
+          totalCost: drivingCost,
+          bookingUrl: 'https://ihmcl.co.in/fastag/',
+          portalName: 'NHAI FASTag',
+          pro: 'Zero wait times at transit hubs; stop anywhere on ghats',
+          con: 'Driver fatigue on prolonged 6+ hr drives'
+        },
+        {
+          mode: 'train',
+          title: 'Indian Railways (Vande Bharat / Express)',
+          sub: 'Southern Railway Corridors (SR / IRCTC)',
+          hub: 'Chennai Central (MAS) / Egmore (MS) → Destination Jnc',
+          totalTime: Number((trainHours + 1.2).toFixed(1)),
+          co2: Math.round(distanceKm * 0.035),
+          totalCost: trainCostPerPax * passengers,
+          bookingUrl: 'https://www.irctc.co.in/',
+          portalName: 'IRCTC Official',
+          pro: 'Lowest carbon footprint; scenic stretch through hills',
+          con: 'Advance reservation required during holidays'
+        },
+        {
+          mode: 'bus',
+          title: 'AC Multi-Axle Volvo / Sleeper',
+          sub: 'SETC Ultra Deluxe / KSRTC Airavat / Private',
+          hub: 'KCBT Kilambakkam / CMBT → Central Bus Stand',
+          totalTime: Number((busHours + 1.0).toFixed(1)),
+          co2: Math.round(distanceKm * 0.08),
+          totalCost: busCostPerPax * passengers,
+          bookingUrl: 'https://www.tnstc.in/',
+          portalName: 'TNSTC / SETC',
+          pro: 'High night frequency; direct drops inside hill towns',
+          con: 'Highway bottleneck delays near Perungalathur'
+        }
+      ];
+
+      if (distanceKm > 320) {
+        options.push({
+          mode: 'flight',
+          title: 'Domestic Direct / 1-Stop Flight',
+          sub: 'IndiGo / Air India / Akasa',
+          hub: 'Chennai Int Airport (MAA - T1) → Regional Hub',
+          totalTime: 4.2, // 1.2h flight + 3h terminal buffers
+          co2: Math.round(distanceKm * 0.24),
+          totalCost: (distanceKm < 550 ? 4200 : 5800) * passengers,
+          bookingUrl: 'https://www.goindigo.in/',
+          portalName: 'Aviation Portal',
+          pro: 'Shortest actual transit duration in the air',
+          con: 'Airport security buffer and baggage check-in delays'
+        });
+      }
+
+      return options;
+    }
+
+    // 6. MAIN ORCHESTRATOR
+    document.getElementById('btnGenerate').addEventListener('click', async () => {
+      const btn = document.getElementById('btnGenerate');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Synthesizing Blueprint...`;
+      lucide.createIcons();
+
+      try {
+        const origin = document.getElementById('inputOrigin').value.trim();
+        const dest = document.getElementById('inputDestination').value.trim();
+        const startDate = document.getElementById('inputStartDate').value;
+        const endDate = document.getElementById('inputEndDate').value;
+        const profile = document.getElementById('selectProfile').value;
+        const passengers = parseInt(document.getElementById('selectPassengers').value);
+        const vehicleKey = document.getElementById('selectVehicle').value;
+        const vehicle = VEHICLE_CATALOG[vehicleKey];
+        const pumpRate = parseFloat(document.getElementById('inputFuelRate').value) || vehicle.defaultRate;
+        const useAC = document.getElementById('checkAC').checked;
+
+        // 1. Geocode
+        const [originCoords, destCoords] = await Promise.all([geocode(origin), geocode(dest)]);
+
+        // 2. Routing
+        const route = await fetchDrivingRoute(originCoords, destCoords);
+
+        // 3. Weather
+        const advisory = await fetchWeatherAndAQI(destCoords[0], destCoords[1]);
+
+        // 4. Vehicle & Toll Math
+        const effectiveEfficiency = useAC ? (vehicle.efficiency / vehicle.acPenalty) : vehicle.efficiency;
+        const totalRoundTripKm = route.distKm * 2;
+        const fuelCost = Math.round((totalRoundTripKm / effectiveEfficiency) * pumpRate);
+        const tollCost = Math.round(route.distKm * 1.95 * 2); // NHAI average round trip
+        const stayCost = 3800 * 3; // 3 nights estimate
+        const foodCost = 1400 * 4 * passengers;
+        const activitiesCost = 1800 * passengers;
+        const bufferCost = Math.round((fuelCost + tollCost + stayCost + foodCost) * 0.12);
+
+        // 5. Multi-modal calculation
+        const transitOptions = buildMultiModalOptions(route.distKm, route.hours, fuelCost + tollCost, passengers);
+
+        // 6. Construct Trip Plan
+        currentTripPlan = {
+          origin,
+          destination: dest,
+          startDate,
+          endDate,
+          profile,
+          passengers,
+          vehicle,
+          pumpRate,
+          route,
+          advisory,
+          transitOptions,
+          costs: { fuelCost, tollCost, stayCost, foodCost, activitiesCost, bufferCost },
+          itinerary: [
+            {
+              day: 1,
+              title: `Ascent to ${dest} via Scenic Corridors`,
+              events: [
+                { time: '05:30 AM', title: 'Early Chennai Departure', desc: 'Beat GST Road / NH48 commuter congestion early morning.', food: 'Murugan Idli Shop / Ghee Podi Dosa & Filter Coffee' },
+                { time: '01:30 PM', title: 'Ghat Road Hairpin Bend Drive', desc: 'Climbing scenic elevation. Use 2nd/3rd gear engine braking.', food: 'Nilgiri Spiced Cardamom Tea & Steamed Sweet Corn' },
+                { time: '05:30 PM', title: 'Resort Check-In & Sunset Stroll', desc: 'Unpack, refresh, and visit the serene botanical or lake promenade.', food: 'Local Homemade Chocolate & Nilgiri Thali' }
+              ]
+            },
+            {
+              day: 2,
+              title: 'Tea Plantations, Heritage Peaks & Cultural Highlights',
+              events: [
+                { time: '08:30 AM', title: 'Peak Vantage Point View', desc: 'Beat tourist queues by arriving at forest gate opening time.', food: 'Hot Butter Toast & Fresh Brewed Green Tea' },
+                { time: '01:00 PM', title: 'Colonial Tea Factory Tasting Experience', desc: 'Interactive orthodox tea leaf grading and processing.', food: 'Traditional South Indian Banana Leaf Meals' },
+                { time: '06:00 PM', title: 'Local Handicrafts & Evening Cafe Leisure', desc: 'Procure pure eucalyptus oils, handmade spices, and organic produce.', food: 'Wood-Fired Pizza & Warm Spiced Apple Pie' }
+              ]
+            }
+          ]
+        };
+
+        // Render UI
+        renderMap(originCoords, destCoords, route.coords);
+        renderAdvisory(advisory);
+        renderTransitMatrix(transitOptions, passengers);
+        updateBudgetDisplay();
+        renderSchedule(currentTripPlan.itinerary);
+
+        // Reveal Containers
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('advisoryBanner').classList.remove('hidden');
+        document.getElementById('transitMatrixContainer').classList.remove('hidden');
+        document.getElementById('budgetGrid').classList.remove('hidden');
+        document.getElementById('itineraryContainer').classList.remove('hidden');
+        document.getElementById('btnExportPDF').disabled = false;
+
+        // Save to LocalStorage / Firebase
+        saveTripToStorage(currentTripPlan);
+
+      } catch (err) {
+        console.error(err);
+        alert('Encountered an issue calculating the route. Please verify locations and try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="zap" class="w-4 h-4"></i> Compute Route & Build Blueprint`;
+        lucide.createIcons();
+      }
+    });
+
+    // 7. RENDER MAP
+    function renderMap(originCoords, destCoords, routeGeometry) {
+      markersLayer.clearLayers();
+      if (routeLayer) map.removeLayer(routeLayer);
+
+      const startMarker = L.marker(originCoords).bindPopup('<b>Origin: Chennai</b>');
+      const endMarker = L.marker(destCoords).bindPopup('<b>Destination</b>');
+      markersLayer.addLayer(startMarker);
+      markersLayer.addLayer(endMarker);
+
+      routeLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 5, opacity: 0.85 }).addTo(map);
+      map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+
+      document.getElementById('routeDistanceBadge').innerText = `${currentTripPlan.route.distKm} km • ~${currentTripPlan.route.hours} hrs`;
+    }
+
+    // 8. RENDER ADVISORY
+    function renderAdvisory(adv) {
+      const banner = document.getElementById('advisoryBanner');
+      const icon = document.getElementById('advisoryIconContainer');
+      const title = document.getElementById('advisoryStatusTitle');
+      const msg = document.getElementById('advisoryMessage');
+      const metrics = document.getElementById('advisoryMetrics');
+
+      if (adv.status === 'Green') {
+        banner.className = 'rounded-2xl border p-4 text-xs bg-emerald-950/40 border-emerald-800/80 text-emerald-300';
+        icon.className = 'p-2 rounded-xl bg-emerald-900/60 text-emerald-400';
+        icon.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5"></i>`;
+        title.innerText = 'Safe & Favorable Travel Conditions';
+      } else {
+        banner.className = 'rounded-2xl border p-4 text-xs bg-amber-950/40 border-amber-800/80 text-amber-300';
+        icon.className = 'p-2 rounded-xl bg-amber-900/60 text-amber-400';
+        icon.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i>`;
+        title.innerText = 'Moderate Transit Caution Advised';
+      }
+
+      msg.innerText = adv.msg;
+      metrics.innerHTML = `
+        <span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">Temp: ${adv.temp}°C</span>
+        <span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">Precip: ${adv.rain}%</span>
+        <span class="bg-slate-900 px-2 py-0.5 rounded border border-slate-700">US AQI: ${adv.aqi}</span>
+      `;
+      lucide.createIcons();
+    }
+
+    // 9. RENDER MULTI-MODAL MATRIX
+    function renderTransitMatrix(options, passengers) {
+      const grid = document.getElementById('transitCardsGrid');
+      grid.innerHTML = '';
+
+      options.forEach(opt => {
+        const isSelected = selectedTransitMode === opt.mode;
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border cursor-pointer transition flex flex-col justify-between ${
+          isSelected 
+            ? 'bg-blue-950/30 border-blue-500 ring-2 ring-blue-500/30 shadow-lg' 
+            : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+        }`;
+
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="p-2 rounded-lg bg-slate-800 text-blue-400">
+                  <i data-lucide="${opt.mode === 'flight' ? 'plane' : opt.mode === 'train' ? 'train' : opt.mode === 'bus' ? 'bus' : 'car'}" class="w-4 h-4"></i>
+                </span>
+                <div>
+                  <h4 class="font-bold text-white text-xs">${opt.title}</h4>
+                  <p class="text-[10px] text-slate-400">${opt.sub}</p>
+                </div>
+              </div>
+              ${isSelected ? `<span class="text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">Active</span>` : ''}
+            </div>
+
+            <div class="bg-slate-900/80 p-2 rounded-lg text-[11px] text-slate-300 font-mono space-y-0.5">
+              <div class="flex justify-between"><span>Hub Route:</span><span class="text-slate-400">${opt.hub}</span></div>
+              <div class="flex justify-between"><span>Door-to-Door:</span><span class="text-white font-bold">${opt.totalTime} hrs</span></div>
+              <div class="flex justify-between"><span>Carbon / Pax:</span><span class="text-emerald-400 font-bold">${opt.co2} kg CO2</span></div>
+            </div>
+
+            <div class="flex items-baseline justify-between pt-1">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Outlay (${passengers} Pax):</span>
+                <p class="text-base font-extrabold text-emerald-400 font-mono">₹${opt.totalCost.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+
+            <div class="text-[10px] text-slate-400 space-y-0.5">
+              <p class="text-emerald-400 font-medium">✓ ${opt.pro}</p>
+              <p class="text-amber-400 font-medium">⚠ ${opt.con}</p>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800 mt-3 flex items-center justify-between">
+            <a href="${opt.bookingUrl}" target="_blank" onclick="event.stopPropagation()" class="text-[11px] text-blue-400 hover:underline flex items-center gap-1 font-semibold">
+              ${opt.portalName} <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+            <span class="text-[10px] text-slate-500">Tap card to select</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => {
+          selectedTransitMode = opt.mode;
+          renderTransitMatrix(options, passengers);
+          updateBudgetDisplay();
+        });
+
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    // 10. UPDATE BUDGET DISPLAY
+    function updateBudgetDisplay() {
+      if (!currentTripPlan) return;
+      const costs = currentTripPlan.costs;
+      const selectedOpt = currentTripPlan.transitOptions.find(o => o.mode === selectedTransitMode);
+      const isDrive = selectedTransitMode === 'self_drive';
+
+      const transitFare = isDrive ? costs.fuelCost : selectedOpt.totalCost;
+      const tollFare = isDrive ? costs.tollCost : 0;
+      const staysDining = costs.stayCost + costs.foodCost;
+      const total = transitFare + tollFare + staysDining + costs.activitiesCost + costs.bufferCost;
+
+      document.getElementById('cardTransitCost').innerText = `₹${transitFare.toLocaleString('en-IN')}`;
+      document.getElementById('cardTollCost').innerText = `₹${tollFare.toLocaleString('en-IN')}`;
+      document.getElementById('cardStayFoodCost').innerText = `₹${staysDining.toLocaleString('en-IN')}`;
+      document.getElementById('cardTotalCost').innerText = `₹${total.toLocaleString('en-IN')}`;
+    }
+
+    // 11. RENDER DAY-WISE SCHEDULE
+    function renderSchedule(itinerary) {
+      const container = document.getElementById('daysList');
+      container.innerHTML = '';
+
+      itinerary.forEach(day => {
+        const dayBox = document.createElement('div');
+        dayBox.className = 'bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4';
+        
+        let eventsHtml = '';
+        day.events.forEach(evt => {
+          eventsHtml += `
+            <div class="flex items-start gap-3.5 text-xs">
+              <span class="w-16 font-mono font-bold text-blue-400 pt-0.5">${evt.time}</span>
+              <div class="flex-1 space-y-1">
+                <p class="font-bold text-white text-sm">${evt.title}</p>
+                <p class="text-slate-400 leading-relaxed">${evt.desc}</p>
+                <p class="text-emerald-400 font-medium text-[11px] flex items-center gap-1">
+                  <i data-lucide="utensils" class="w-3 h-3"></i> Food Stop: ${evt.food}
+                </p>
+              </div>
+            </div>
+          `;
+        });
+
+        dayBox.innerHTML = `
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <span class="font-bold text-blue-400 text-sm">Day ${day.day}</span>
+            <span class="text-xs text-slate-300 font-medium">${day.title}</span>
+          </div>
+          <div class="space-y-4 pt-1">${eventsHtml}</div>
+        `;
+        container.appendChild(dayBox);
+      });
+      lucide.createIcons();
+    }
+
+    // 12. CLIENT-SIDE PDF GENERATOR (jsPDF + autoTable)
+    document.getElementById('btnExportPDF').addEventListener('click', () => {
+      if (!currentTripPlan) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const trip = currentTripPlan;
+
+      // Header Banner
+      doc.setFillColor(15, 23, 42); // slate-900
+      doc.rect(0, 0, 210, 42, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text('VOYAGECRAFT ITINERARY BLUEPRINT', 14, 20);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Origin: ${trip.origin}  |  Destination: ${trip.destination}`, 14, 28);
+      doc.text(`Travel Dates: ${trip.startDate} to ${trip.endDate}  |  Travelers: ${trip.passengers}`, 14, 35);
+
+      // Diagnostics Card
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(14, 48, 182, 26, 2, 2, 'F');
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Trip Execution Diagnostics:', 18, 55);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`• Vehicle: ${trip.vehicle.name} (Efficiency: ${trip.vehicle.efficiency} km/L)`, 18, 62);
+      doc.text(`• Pump Rate Applied: Rs. ${trip.pumpRate.toFixed(2)} (Live Chennai baseline)`, 18, 68);
+      doc.text(`• One-Way Distance: ${trip.route.distKm} km (~${trip.route.hours} driving hrs)`, 110, 62);
+      doc.text(`• Selected Transit Mode: ${selectedTransitMode.toUpperCase()}`, 110, 68);
+
+      // Itinerary Schedule Table
+      const scheduleRows = [];
+      trip.itinerary.forEach(d => {
+        d.events.forEach(e => {
+          scheduleRows.push([`Day ${d.day}\n${e.time}`, e.title + '\n' + e.desc, e.food]);
+        });
+      });
+
+      doc.autoTable({
+        startY: 80,
+        head: [['Day & Time', 'Activity & Execution Plan', 'Recommended Regional Food Stop']],
+        body: scheduleRows,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59] },
+        styles: { fontSize: 8.5, cellPadding: 3.5 },
+        columnStyles: { 0: { cellWidth: 26 }, 1: { cellWidth: 95 }, 2: { cellWidth: 61 } }
+      });
+
+      // Budget Breakdown Table
+      const finalY = doc.lastAutoTable.finalY + 10;
+      const selectedOpt = trip.transitOptions.find(o => o.mode === selectedTransitMode);
+      const isDrive = selectedTransitMode === 'self_drive';
+      const transitCost = isDrive ? trip.costs.fuelCost : selectedOpt.totalCost;
+      const tollCost = isDrive ? trip.costs.tollCost : 0;
+      const totalCost = transitCost + tollCost + trip.costs.stayCost + trip.costs.foodCost + trip.costs.activitiesCost + trip.costs.bufferCost;
+
+      doc.autoTable({
+        startY: finalY,
+        head: [['Budget Line Item', 'Estimation Formula', 'Projected Outlay (INR)']],
+        body: [
+          [isDrive ? 'Round-Trip Vehicle Fuel' : 'Transit Reserved Fares', isDrive ? 'Calculated with real efficiency & AC factor' : selectedOpt.title, `Rs. ${transitCost.toLocaleString('en-IN')}`],
+          ['FASTag Toll Plazas', 'Corridor average for round trip', `Rs. ${tollCost.toLocaleString('en-IN')}`],
+          ['Accommodations & Dining', '3 Nights hotel stays + daily dining', `Rs. ${(trip.costs.stayCost + trip.costs.foodCost).toLocaleString('en-IN')}`],
+          ['Sightseeing & Activities', 'Permits, viewpoints and guided tours', `Rs. ${trip.costs.activitiesCost.toLocaleString('en-IN')}`],
+          ['Contingency Reserve (12%)', 'Medical, emergency repairs and detour fund', `Rs. ${trip.costs.bufferCost.toLocaleString('en-IN')}`],
+          ['TOTAL ESTIMATED OUTLAY', 'All inclusive projected budget', `Rs. ${totalCost.toLocaleString('en-IN')}`]
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [51, 65, 85] },
+        styles: { fontSize: 8.5 }
+      });
+
+      // Safety Checklist Page
+      doc.addPage();
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 210, 18, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Pre-Trip Inspection & Emergency Directory', 14, 12);
+
+      doc.autoTable({
+        startY: 24,
+        head: [['System / Parameter', 'Actionable Safety Checklist', 'Sign-off']],
+        body: [
+          ['Cold Tire Pressure', 'Front: 33 PSI, Rear: 35 PSI. Verify spare wheel tread and jack kit.', '[   ]'],
+          ['Ghat Mountain Braking', 'Downhill driving: Shift to 2nd/3rd gear engine braking. Do not ride the brakes.', '[   ]'],
+          ['Coolant & Oil Check', 'Top up engine coolant to max to prevent hill climb overheating.', '[   ]'],
+          ['FASTag Balance', 'Maintain a minimum balance of Rs. 1,000 for zero toll gate delays.', '[   ]'],
+          ['Permits & Passes', 'Verify Nilgiris / Kodaikanal e-Pass requirements during season.', '[   ]'],
+          ['Helpline Numbers', 'National Emergency: 112 | NHAI Highway Helpline: 1033 | Ambulance: 108', 'ACTIVE']
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [30, 41, 59] },
+        styles: { fontSize: 9, cellPadding: 4 }
+      });
+
+      doc.save(`voyagecraft_${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '_')}_blueprint.pdf`);
+    });
+
+    // 13. STORAGE & OPTIONAL FIREBASE INTEGRATION
+    function saveTripToStorage(trip) {
+      localStorage.setItem('voyagecraft_latest_trip', JSON.stringify(trip));
+      const firebaseConfigStr = localStorage.getItem('voyagecraft_firebase_config');
+      if (firebaseConfigStr) {
+        try {
+          // Dynamic Firebase ESM import
+          import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js').then(({ initializeApp, getApps }) => {
+            import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js').then(({ getFirestore, collection, addDoc }) => {
+              const config = JSON.parse(firebaseConfigStr);
+              const app = !getApps().length ? initializeApp(config) : getApps()[0];
+              const db = getFirestore(app);
+              addDoc(collection(db, 'trips'), { ...trip, createdAt: new Date().toISOString() });
+            });
+          });
+        } catch (e) {
+          console.warn('Firebase sync warning:', e);
+        }
+      }
+    }
+
+    // Modal Events
+    const modal = document.getElementById('firebaseModal');
+    document.getElementById('btnOpenFirebaseModal').addEventListener('click', () => {
+      document.getElementById('firebaseConfigInput').value = localStorage.getItem('voyagecraft_firebase_config') || '';
+      modal.classList.remove('hidden');
+    });
+    document.getElementById('btnCloseFirebaseModal').addEventListener('click', () => modal.classList.add('hidden'));
+    document.getElementById('btnClearFirebase').addEventListener('click', () => {
+      localStorage.removeItem('voyagecraft_firebase_config');
+      document.getElementById('firebaseConfigInput').value = '';
+      document.getElementById('firebaseStatusText').innerText = 'Firebase: Local';
+      modal.classList.add('hidden');
+    });
+    document.getElementById('btnSaveFirebase').addEventListener('click', () => {
+      const val = document.getElementById('firebaseConfigInput').value.trim();
+      if (val) {
+        try {
+          JSON.parse(val);
+          localStorage.setItem('voyagecraft_firebase_config', val);
+          document.getElementById('firebaseStatusText').innerText = 'Firebase: Cloud';
+          alert('Firebase configuration saved successfully!');
+        } catch (e) {
+          alert('Invalid JSON format. Please verify your Firebase config object.');
+          return;
+        }
+      }
+      modal.classList.add('hidden');
+    });
+
+    if (localStorage.getItem('voyagecraft_firebase_config')) {
+      document.getElementById('firebaseStatusText').innerText = 'Firebase: Cloud';
+    }
+  </script>
+</body>
+</html>
